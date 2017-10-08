@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Tutor Plugin Student View</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	</head>
+	<style>
+		.button {
+			background-color: #4CAF50; /* Green */
+			border: none;
+			color: white;
+			padding: 2px 20px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 16px;
+		}
+		.linklike {
+			background:none!important;
+			border:none;
+			padding:0!important;
+			font: inherit;
+			/*border is optional*/
+			border-bottom:1px solid #444;
+			cursor: pointer;
+			color:#77B4F2;
+		}
+		body {
+			background:#303030;
+		}
+		h1 {
+			color: #ffffff;
+			font-family: 'Lato', sans-serif;
+			font-size: 51px;
+			font-weight: 300;
+			line-height: 50px;
+			margin: 0 0 20px;
+		}
+		h3 {
+			color: #000000;
+			font-family: 'Lato', sans-serif;
+		}
+		.bodyStyle {
+			color: #000000;
+			font-family: 'Lato', sans-serif;
+			width:auto;
+			display:inline;
+			word-wrap:break-word;
+		}
+		#demo {
+			color:#ffffff;
+		}
+		
+		.tab-content {
+			background-color:#ffffff;
+		}
+		
+		.nav-pills > li > a {
+			color:#ffffff;
+		}
+		.nav-pills > li > a:hover {
+			color:#2d8ceb;
+		}
+
+		#dateTimeValue
+		{
+			background: #fe921f;
+			color: #ffffff;
+			display: inline-block;
+			font-family: 'Lato', sans-serif;
+			font-size: 12px;
+			font-weight: bold;
+			line-height: 12px;
+			letter-spacing: 1px;
+			margin: 0 0 30px;
+			padding: 10px 15px 8px;
+			text-transform: uppercase;
+		}?
+	</style>
+	<script>
+		function startTime() {
+			var today = new Date();
+			var h = today.getHours();
+			var m = today.getMinutes();
+			var s = today.getSeconds();
+			var dd = today.getDate();
+			var mm = today.getMonth()+1; //January is 0!
+			var yyyy = today.getFullYear();
+			if(dd<10){
+				dd='0'+dd
+			}
+			if(mm<10){
+				mm='0'+mm
+			}
+			m = checkTime(m);
+			s = checkTime(s);
+			document.getElementById('dateTimeValue').innerHTML =
+			"Current Date - " + mm + "/" + dd + "/" + yyyy + "    |    " + "Current Time - " + h + ":" + m + ":" + s;
+			var t = setTimeout(startTime, 500);
+		}
+		
+		function checkTime(i) {
+			if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+			return i;
+		}
+		
+		function showData(clicked_Id) {
+			var getURL = '';
+			var makeAJAXCall = false;
+			
+			if (clicked_Id == 'studentButton') {
+				var studentId = $("input[name=studentViewStudentId]").val();
+				var courseName = $("input[name=studentViewCourseName]").val();
+				getURL = 'http://localhost:8080/studentView/'+courseName+'/'+studentId;
+				
+				if (studentId && courseName && studentId.length == 10 && courseName.length == 6) {
+					makeAJAXCall = true;
+				}
+			}
+			else if (clicked_Id == 'visualButton') {
+				var courseName = $("input[name=visualViewCourseName]").val();
+				var assignmentName = $("input[name=visualViewAssignmentName]").val();
+				var getURL = 'http://localhost:8080/visualizationView/'+courseName+'/'+assignmentName;
+				
+				if (courseName && assignmentName && courseName.length == 6) {
+					makeAJAXCall = true;
+				}
+			}
+			
+			if (makeAJAXCall) {
+				$.ajax({
+					url: getURL,
+					type: 'GET',
+					dataType: 'application/json',
+					complete: function(data){
+						console.log("complete showData");
+						
+						var myNewValue = data && data.responseText;
+						if (myNewValue != null) {
+							var result = JSON.parse(data.responseText);
+							
+							if (clicked_Id == 'studentButton') {
+								if (result != null && result.length > 0) {
+									for (var i = 1; i <= result.length; i++) {
+										var durationList = '';
+										var pasteList = '';
+										var compilationErrorList = '';
+										var runtimeErrorList = '';
+										
+										if (result[i-1].durationList != null && result[i-1].durationList.length > 0) {
+											for (var j = 0; j < result[i-1].durationList.length; j++) {
+												durationList += '<b>File:</b> <i>'+result[i-1].durationList[j].fileName + 
+																'</i><br/><b>Start Time: </b><i>'+ result[i-1].durationList[j].fileStartTime +
+																'</i><br/><b>End Time: </b><i>' +result[i-1].durationList[j].fileEndTime + '</i><br/><br/>';
+											}
+										}
+										else {
+											durationList = 'NIL';
+										}
+										
+										if (result[i-1].pasteList != null && result[i-1].pasteList.length > 0) {
+											for (var j = 0; j < result[i-1].pasteList.length; j++) {
+												pasteList += '<b>File:</b> <i>'+result[i-1].pasteList[j].file + 
+																'</i><br/><b>Date: </b><i>'+ result[i-1].pasteList[j].date +
+																'</i><br/><b>Number of Lines: </b><i>' +result[i-1].pasteList[j].count + '</i><br/><br/>';
+											}
+										}
+										else {
+											pasteList = 'NIL';
+										}
+										
+										if (result[i-1].compilationErrorList != null && result[i-1].compilationErrorList.length > 0) {
+											for (var j = 0; j < result[i-1].compilationErrorList.length; j++) {
+												compilationErrorList += '<b>File:</b> <i>'+result[i-1].compilationErrorList[j].file + 
+																		'</i><br/><b>Message: </b><i>'+ result[i-1].compilationErrorList[j].message +
+																		'</i><br/><b>LineNumber: </b><i>' +result[i-1].compilationErrorList[j].lineNumber + 
+																		'</i><br/><b>Count: </b><i>' +result[i-1].compilationErrorList[j].count + '</i><br/><br/>';
+											}
+										}
+										else {
+											compilationErrorList = 'NIL';
+										}
+										
+										if (result[i-1].runtimeErrorList != null && result[i-1].runtimeErrorList.length > 0) {
+											for (var j = 0; j < result[i-1].runtimeErrorList.length; j++) {
+												runtimeErrorList += '<b>Message: </b><i>'+ result[i-1].runtimeErrorList[j].message +
+																	'</i><br/><b>Count: </b><i>' +result[i-1].runtimeErrorList[j].count + '</i><br/><br/>';
+											}
+										}
+										else {
+											runtimeErrorList = 'NIL';
+										}
+									
+										// Create new Accordion dynamically
+										var queue = '<div class="panel panel-default">';
+										queue += '<div class="panel-heading">';
+										queue += '<h4 class="panel-title">';
+										queue += '<a data-toggle="collapse" data-parent="#queues-accordion" href="#collapse' + i + '">' + result[i-1].assignmentName + '</a>';
+										queue += '</h4>';
+										queue += '</div>';
+										queue += '<div id="collapse' + i + '" class="panel-collapse collapse">';
+										queue += '<div class="panel-body">';
+										//
+										queue += '<table class="table">';
+										queue += '<tbody>';
+										queue += '<tr>';
+										queue += '<th>Is Successful</th>';
+										queue += '<td>' + result[i-1].successful + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Lines of Code</th>';
+										queue += '<td>' + result[i-1].linesOfCode + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Run Attempts</th>';
+										queue += '<td>' + result[i-1].runAttemptCount + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Debug Attempts</th>';
+										queue += '<td>' + result[i-1].debugAttemptCount + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Submission Time</th>';
+										queue += '<td>' + result[i-1].submissionTime + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Duration of Work</th>';
+										queue += '<td>' + result[i-1].totalTime + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Duration Details</th>';
+										queue += '<td>' + durationList + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Paste/Autogen Code</th>';
+										queue += '<td>' + pasteList + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Compilation Errors</th>';
+										queue += '<td>' + compilationErrorList + '</td>';
+										queue += '</tr>';
+										queue += '<tr>';
+										queue += '<th>Runtime Errors</th>';
+										queue += '<td>' + runtimeErrorList + '</td>';
+										queue += '</tr>';
+										//
+										queue += '</div>';
+										queue += '</div>';
+										queue += '</div>';
+										$('#queues-accordion').append(queue);
+									}
+								}
+							}
+							else {
+								if (result != null) {
+									var chartType = document.getElementById('chartType').value;
+									
+									if (chartType == 'pie') {
+										google.charts.load('current', {'packages':['corechart']});
+										google.charts.setOnLoadCallback(function () {
+											var data = google.visualization.arrayToDataTable([
+														['Task', 'Number of Students'],
+														['Success', result.successCount],
+														['Fail', (result.studentCount - result.successCount)]
+														]);
+	
+											var options = {
+															title: 'Students Participation and Success',
+															is3D: true,
+															colors: ['#339933','#cc3300'],
+															legend: {
+																		display: true,
+																		position: 'right'
+																	}
+															};
+											
+											document.getElementById('piechart').hidden = '';
+											document.getElementById('areachart').hidden = 'hidden';
+											document.getElementById('columnchart').hidden = 'hidden';
+											document.getElementById('linechart').hidden = 'hidden';
+											document.getElementById('bubblechart').hidden = 'hidden';
+											var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+	
+											chart.draw(data, options);
+										});
+									}
+									else if (chartType == 'area') {
+										google.charts.load('current', {'packages':['corechart']});
+										google.charts.setOnLoadCallback(function () {
+											var data = new google.visualization.DataTable();
+											data.addColumn('string', 'StudentId');
+											data.addColumn('number', 'Lines of Code');
+											
+											for (var k = 0; k < result.studentData.length; k++) {
+												var id = result.studentData[k].studentId;
+												var loc = result.studentData[k].linesOfCode;
+												data.addRows([
+													[id, loc]
+												]);
+											}
+											
+											var options = {
+															title: 'Lines of Code',
+															hAxis: {title: 'StudentId',  titleTextStyle: {color: '#333'},
+																	slantedText:true, slantedTextAngle:80},
+															vAxis: {minValue: 0},
+															explorer: { 
+																actions: ['dragToZoom', 'rightClickToReset'],
+																axis: 'horizontal',
+																keepInBounds: true,
+																maxZoomIn: 4.0},
+															colors: ['#009999'],
+															};
+											
+											document.getElementById('piechart').hidden = 'hidden';
+											document.getElementById('areachart').hidden = '';
+											document.getElementById('columnchart').hidden = 'hidden';
+											document.getElementById('linechart').hidden = 'hidden';
+											document.getElementById('bubblechart').hidden = 'hidden';
+											var chart = new google.visualization.AreaChart(document.getElementById('areachart'));
+											
+											chart.draw(data, options);
+										});
+									}
+									else if(chartType == 'column') {
+										google.charts.load('current', {'packages':['corechart']});
+										google.charts.setOnLoadCallback(function () {
+											var data = new google.visualization.DataTable();
+											data.addColumn('string', 'StudentId');
+											data.addColumn('number', 'Number of Run Attempts');
+											
+											for (var k = 0; k < result.studentData.length; k++) {
+												var id = result.studentData[k].studentId;
+												var rac = result.studentData[k].runAttemptCount;
+												data.addRows([
+													[id, rac]
+												]);
+											}
+											
+											var options = {
+															title: 'Number of Run Attempts',
+															hAxis: {title: 'StudentId',  titleTextStyle: {color: '#333'},
+																	slantedText:true, slantedTextAngle:80},
+															vAxis: {minValue: 0},
+															explorer: { 
+																actions: ['dragToZoom', 'rightClickToReset'],
+																axis: 'horizontal',
+																keepInBounds: true,
+																maxZoomIn: 4.0},
+															colors: ['#cc9900'],
+															};
+											
+											document.getElementById('piechart').hidden = 'hidden';
+											document.getElementById('areachart').hidden = 'hidden';
+											document.getElementById('columnchart').hidden = '';
+											document.getElementById('linechart').hidden = 'hidden';
+											document.getElementById('bubblechart').hidden = 'hidden';
+											var chart = new google.visualization.ColumnChart(document.getElementById('columnchart'));
+											
+											chart.draw(data, options);
+										});
+									}
+									else if(chartType == 'line') {
+										google.charts.load('current', {'packages':['corechart']});
+										google.charts.setOnLoadCallback(function () {
+											var data = new google.visualization.DataTable();
+											data.addColumn('string', 'StudentId');
+											data.addColumn('date', 'Submission Time');
+											for (var k = 0; k < result.studentData.length; k++) {
+												var id = result.studentData[k].studentId;
+												var a = result.studentData[k].submissionTime.split(/\/|\s|:/);
+												data.addRows([
+													[id, new Date(a[0], a[1]-1, a[2], a[3], a[4], a[5], 0)]
+												]);
+											}
+											
+											var options = {
+															title: 'Submission Time',
+															hAxis: {title: 'StudentId',  titleTextStyle: {color: '#333'},
+																	slantedText:true, slantedTextAngle:80},
+															//vAxis: {minValue: 0},
+															explorer: { 
+																actions: ['dragToZoom', 'rightClickToReset'],
+																axis: 'horizontal',
+																keepInBounds: true,
+																maxZoomIn: 4.0},
+															colors: ['#666699'],
+															chartArea:{backgroundColor: '#e0e0eb'}
+															};
+											
+											document.getElementById('piechart').hidden = 'hidden';
+											document.getElementById('areachart').hidden = 'hidden';
+											document.getElementById('columnchart').hidden = 'hidden';
+											document.getElementById('linechart').hidden = '';
+											document.getElementById('bubblechart').hidden = 'hidden';
+											var chart = new google.visualization.LineChart(document.getElementById('linechart'));
+											
+											chart.draw(data, options);
+										});
+									}
+									else if (chartType == 'bubble') {
+										document.getElementById('piechart').hidden = 'hidden';
+										document.getElementById('areachart').hidden = 'hidden';
+										document.getElementById('columnchart').hidden = 'hidden';
+										document.getElementById('linechart').hidden = 'hidden';
+										document.getElementById('bubblechart').hidden = '';
+										
+										$('#bubblechart').empty();
+										
+										var root = {};
+										root.name = "Interactions";
+										root.children = new Array();
+										for (i=0;i<result.errorList.length;i++) {
+											var item = {};
+											item.name = result.errorList[i].message;
+											item.value = Number(result.errorList[i].count);
+											item.group = result.errorList[i].type;
+											root.children.push(item);
+										}
+										
+										var width = document.getElementById("visualizationView").clientWidth;
+										var height = 350;
+										
+										var bubble = d3.layout.pack().sort(null).size([width,height]).padding(1.5);
+										
+										var svg = d3.select("#bubblechart")
+													.append("svg")
+													.attr("width", width)
+													.attr("height", height)
+													.attr("class", "bubble");
+													
+										var node = svg.selectAll(".node")
+														.data(bubble.nodes(root)
+														.filter(function(d){ return !d.children;}))
+														.enter()
+														.append("g")
+														.attr("class","node")
+														.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+										
+										var colour = d3.scale.category10();
+										node.append("circle")
+											.attr("r", function(d) { return d.r; })
+											.style("fill", function(d) { return colour(d.group); });
+										node.append("title")
+											.text(function(d) {
+												return d.name;
+											});
+										node.append("text")
+											.attr("dy", ".3em")
+											.style("text-anchor", "middle")
+											.text(function(d) { return d.value; });
+											
+										svg.append("text")
+											.attr("x", (width / 4))             
+											.attr("y", 32)
+											.attr("text-anchor", "middle")
+											.style("font-size", "14px") 
+											.style("font-weight", "bold")
+											.text("Compilation and Runtime Errors");
+										
+										var legend_data = bubble.nodes(root).filter(function(d, i){  
+																	return !d.children;
+																});
+										
+										var legend = svg.append("g")
+															.attr("class", "legend")
+															.selectAll("g")
+															.data(legend_data, function(d) { return d.group; })
+															.enter()
+																.append("g")
+																.attr("transform", function(d,i){
+																	var j = i + 3;
+																	var k = d.depth + 12;
+																	return "translate(" + k*10 + "," + j*20 + ")"; 
+																})
+														
+										// Draw rects, and color them by original_index
+										legend.append("rect")
+												.attr("width", 8)
+												.attr("height", 8)
+												.style("fill", function(d){return colour(d.group)});
+										
+										legend.append("text")
+												.attr("x", function(d,i){ return d.depth*10 +10;})
+												.attr("dy", "0.50em")
+												.text(function(d){return d.group;});
+									}
+								}
+							}
+							
+						}
+					},
+					success: function(data){
+						console.log("success showStudentAssignments");
+					}
+				});
+			}
+		}
+	</script>
+	<body onload="startTime()">
+			<br><br><br>
+
+			<div class="mainContent">
+				<div class="col-md-3"></div>
+				<div class="col-md-6">
+					<h1>Tutor Plugin - Student View</h1>
+					<div align="right">
+						<div id="dateTimeValue" ></div>
+					</div>
+					<br>
+						<ul class="nav nav-pills nav-justified">
+							<li class="active"><a data-toggle="pill" href="#studentView">Student View</a></li>
+							<li><a data-toggle="pill" href="#visualizationView">Visualization View</a></li>
+						</ul>
+  
+						<div class="tab-content">
+						
+							<div id="studentView" class="tab-pane fade in active">
+								<br/>
+								<div class="col-sm-18">
+									<div class="col-sm-2">
+										Course &nbsp; <input type="text" required name="studentViewCourseName" maxlength="6" size="8" placeholder="Eg:CSE100"/>
+									</div>
+									<div class="col-sm-2">
+										Student-ID &nbsp; 
+										<input type="number" required min="1000000000" max="9999999999" name="studentViewStudentId" style="width:120px;" placeholder="Eg:1111111111"/>
+									</div>
+									<div class="col-sm-3">
+									</div>
+									<div class="col-sm-4">
+										<input type="button" onclick="showData(this.id)" id="studentButton" value="Get information" size="10" width="10" class="button" />
+									</div>
+								</div>
+								<br/><br/><br/>
+								<!-- Accordian -->
+								<div class="panel-group" id="queues-accordion">
+								</div> 
+								<!-- Accordian -->
+							</div>
+						
+							<div id="visualizationView" class="tab-pane fade">
+								<br/>							
+								
+								<div class="col-sm-18">
+								<div class="col-sm-2">
+									Course &nbsp; <input type="text" required name="visualViewCourseName" maxlength="6" size="8" placeholder="Eg:CSE100"/>
+								</div>
+								<div class="col-sm-3">
+									Assignment &nbsp; <input type="text" required name="visualViewAssignmentName" size="15" placeholder="Eg:HelloWorld"/>
+								</div>
+								<div class="col-sm-3">
+									Chart Type &nbsp; 
+									<select id="chartType" style="max-width:80%">
+										<option value="pie">Student Participation & Success</option>
+										<option value="area">Lines of Code</option>
+										<option value="column">Number of Run Attempts</option>
+										<option value="line">Submission Time</option>
+										<option value="bubble">Compilation & Runtime Errors</option>
+									</select>
+								</div>
+								<div class="col-sm-4">
+									<input type="button" onclick="showData(this.id)" id="visualButton" value="Get information" size="10" width="10" class="button" />
+								</div>
+								</div>
+								<br/><br/><br/>
+								<div id="piechart" style="height: 350px;" hidden="hidden"></div>
+								<div id="areachart" style="height: 350px;" hidden="hidden"></div>
+								<div id="columnchart" style="height: 350px;" hidden="hidden"></div>
+								<div id="linechart" style="height: 350px;" hidden="hidden"></div>
+								<div id="bubblechart" style="height: 350px;" hidden="hidden"></div>
+							</div>
+							<br/>
+						</div>
+					<button type="button" class="linklike pull-right" data-toggle="collapse" data-target="#demo">About the project</button>
+						<div id="demo" class="collapse pull-right">
+							<i>
+							<br/>
+							<p>
+							This project has two parts:
+							</p>
+							Developing an eclipse plugin that facilitates
+							<ul>
+								<li>Download of course assignments.</li>
+								<li>Collection of output and productivity information.</li>
+								<li>Submission of finished assignment by every student.</li>
+							</ul>
+							Visualizing the collected information that will be used
+							<ul>
+								<li>To provide grade for success.</li>
+								<li>To indicate the number of attempts, time taken, number of lines of code by each student.</li>
+								<li>To identify topics (or concepts) difficult for the students based on above information.</li>
+							</ul>
+							</i>
+						</div>
+
+				</div>
+				<div class="col-md-3"></div>
+
+			</div>
+	</body>
+</html>
